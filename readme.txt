@@ -41,6 +41,3 @@ Ordered list:
 1. Customize Upsell CTA
 1. Add Downsell Code
 1. Customize Upsell link and text
-
-
-`<?php code(); ?>`
