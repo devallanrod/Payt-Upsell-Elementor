@@ -3,7 +3,7 @@
 /**
  * Plugin Name: Payt Upsell for Elementor
  * Description: Add Payt Upsell Button on Elementor.
- * Version: 1.0.0
+ * Version: 1.0.1
  * Author: Payt.com.br
  */
 
@@ -255,62 +255,33 @@ add_action('elementor/widgets/widgets_registered', function () {
                 $downsell_style = 'display: block;';
             }
 
-			$downsell_script = '<script>
-			function addSrc() {
-					 // Início da config
-					 var keyOnCurrentUrl = "_o";
-					 var newKeyOnLinks = "_o";
-					 var links = window.document.querySelectorAll("a.downsell");
-					 var previousSrc = window.location.search.match(/_o=(.*?)(:?\&|#|$)/);
-					 var sourceValue = !previousSrc ? "" : previousSrc[1]; 
-					 for (var i in links) {
-						 if (typeof links[i].href !== "string") return;
-						 links[i].href = links[i].href.replace(
-							 /(^.*?)(?:\?(.*?))?(#.*|$)/,
-							 function (match, urlAndPath, originalQueryString, anchor) {
-								 var newQueryString = [];
-								 var keyExistsOnCurrentUrl = false;
-								 if (typeof originalQueryString === "string") {
-									 newQueryString = originalQueryString.split("&").reduce(function (queryString, queryPart) {
-										 if (!queryPart.startsWith(keyOnCurrentUrl + "="))
-											 queryString.push(queryPart)
-										 else {
-											 keyExistsOnCurrentUrl = true;
-											 var data = queryPart.split("=")
-											 queryString.push(newKeyOnLinks + "=" + sourceValue + "_" + data[1]);
-										 }
-										 return queryString;
-									 }, []);
-								 }
-								 if (!keyExistsOnCurrentUrl) {
-									 newQueryString.push(newKeyOnLinks + "=" + sourceValue);
-								 }
-								 return urlAndPath + "?" + newQueryString.join("&") + anchor;
-							 }
-						 );
-					 }
-				 }
-		   window.addEventListener("load", addSrc);
-		   </script>';
-
 			?>
 			<?php if ($enable_delay == 'yes') {
                $delayClass = delayed;
             } ?>
 			<?php if ($enable_downsell == 'yes') {
-				echo esc_html($downsell_script);
-			} ?>
+				wp_enqueue_script( 'payt_elementor_custom_js', plugins_url( '/js/downsell.js', __FILE__ ), array(), mt_rand(0,9999), true);
+			} 
+            
+            
+            wp_enqueue_script( 'payt-include-upsell-script', "https://checkout.payt.com.br/multiple-oneclickbuyscript/$upsell_number.js" );
+			wp_add_inline_script( 'payt-include-upsell-script', 'var payt_elementor = ' . json_encode([
+				'delayTime' => $delay_time
+			]), 'before');
 			
+            ?>
 			
+
 			<div class="payt-widget <?php echo esc_attr( $delayClass ); ?>" style="text-align: center; <?php echo esc_html($delay_style); ?>">
 				<a href="#" payt_action="oneclick_buy" data-object="<?php echo esc_html($object_id); ?>" style="background: <?php echo esc_html($settings['background_color']); ?>; color: <?php echo esc_html($settings['text_color']); ?>; padding: 8px 12px; text-decoration: none; font-size: <?php echo esc_html($size) . esc_html($unit); ?>; font-family: sans-serif; border-radius: <?php echo esc_html($sizeB) . esc_html($unitB); ?>; display: block; margin: 10px auto; width: max-content;"><?php echo esc_html($title); ?></a>
 				<select payt_element="installment" data-object="<?php echo esc_html($object_id); ?>" style="width: auto; margin: 0 auto;"></select>
-				<script type="text/javascript" src="https://checkout.payt.com.br/multiple-oneclickbuyscript/<?php echo esc_html($upsell_number); ?>.js"></script>
 				<p class="" style="margin-top:16px;text-align: center; <?php echo esc_html($downsell_style); ?>"><a href="<?php echo esc_html($link_downsell); ?>" class="downsell" style="color: <?php echo esc_html($downsell_color); ?>;"><?php echo esc_html($text_downsell); ?></a></p>
 			</div> <?php
 			
 			?>
-			    <script type="text/javascript">setTimeout(function() { jQuery(".delayed").show(); }, ( <?php echo esc_js( $delay_time ); ?> * 1000));</script>
+
+            
+			    
 			<?php
 
         }
@@ -318,5 +289,25 @@ add_action('elementor/widgets/widgets_registered', function () {
 
     }
 
+
     \Elementor\Plugin::instance()->widgets_manager->register_widget_type(new Payt_Upsell_Widget());
 });
+
+/**
+ * Scripts and styles.
+ */
+
+function my_load_scripts($hook) {
+
+	// create my own version codes
+	$my_js_ver  = date("ymdH-Gis", filemtime( plugin_dir_path( __FILE__ ) . '/js/custom.js' ));
+	$my_css_ver = date("ymdH-Gis", filemtime( plugin_dir_path( __FILE__ ) . '/css/style.css' ));
+	
+	wp_enqueue_script( 'payt_elementor_custom_js', plugins_url( '/js/custom.js', __FILE__ ), array(), mt_rand(0,9999), true);
+	wp_register_style( 'my_css', plugins_url( '/css/style.css', __FILE__ ), false,   mt_rand(0,9999) );
+	wp_enqueue_style ( 'my_css' );
+
+}
+add_action('wp_enqueue_scripts', 'my_load_scripts');
+
+
